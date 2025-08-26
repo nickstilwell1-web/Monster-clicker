@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monster Clicker</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#4caf50"/>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; margin: 0; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    button { padding: 15px 30px; font-size: 18px; margin: 10px; border-radius: 8px; border: none; background: #4caf50; color: white; cursor: pointer; }
+    button:hover { background: #45a049; }
+    .stats, .shop, .team, .log { margin-top: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .log { max-height: 150px; overflow-y: auto; text-align: left; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Monster Clicker</h1>
+  <button onclick="submitAction()">SUBMIT</button>
+
+  <div class="stats">
+    <h2>Stats</h2>
+    <p>Coins: <span id="coins">0</span></p>
+    <p>Pokéballs: <span id="balls">10</span></p>
+    <p>Auto Submit Lv: <span id="autoLevel">0</span></p>
+    <p>Luck Lv: <span id="luckLevel">0</span></p>
+  </div>
+
+  <div class="shop">
+    <h2>Shop</h2>
+    <button onclick="buyBall()">Buy Pokéball (10c)</button>
+    <button onclick="buyAuto()">Upgrade Auto Submit (50c)</button>
+    <button onclick="buyLuck()">Upgrade Luck (50c)</button>
+  </div>
+
+  <div class="team">
+    <h2>Your Team</h2>
+    <ul id="team"></ul>
+  </div>
+
+  <div class="log" id="log">
+    <p><i>Welcome to Monster Clicker!</i></p>
+  </div>
+
+  <script>
+    let coins = 0;
+    let balls = 10;
+    let autoLevel = 0;
+    let luckLevel = 0;
+    let team = [];
+
+    if (localStorage.getItem("save")) {
+      ({ coins, balls, autoLevel, luckLevel, team } = JSON.parse(localStorage.getItem("save")));
+    }
+
+    function logMessage(msg) {
+      const log = document.getElementById("log");
+      log.innerHTML = "<p>" + msg + "</p>" + log.innerHTML;
+    }
+
+    function updateUI() {
+      document.getElementById("coins").innerText = coins;
+      document.getElementById("balls").innerText = balls;
+      document.getElementById("autoLevel").innerText = autoLevel;
+      document.getElementById("luckLevel").innerText = luckLevel;
+      const teamList = document.getElementById("team");
+      teamList.innerHTML = "";
+      team.forEach(m => {
+        const li = document.createElement("li");
+        li.textContent = m;
+        teamList.appendChild(li);
+      });
+      localStorage.setItem("save", JSON.stringify({ coins, balls, autoLevel, luckLevel, team }));
+    }
+
+    function randomMonster() {
+      const monsters = ["Pikachu", "Charmander", "Bulbasaur", "Squirtle", "Eevee", "Snorlax"];
+      return monsters[Math.floor(Math.random() * monsters.length)];
+    }
+
+    function submitAction() {
+      if (balls <= 0) {
+        logMessage("No Pokéballs left!");
+        return;
+      }
+      balls--;
+      const monster = randomMonster();
+      const chance = 0.4 + luckLevel * 0.05;
+      if (Math.random() < chance) {
+        logMessage("You caught a " + monster + "!");
+        team.push(monster);
+        coins += 5;
+      } else {
+        logMessage("The wild " + monster + " escaped!");
+      }
+      updateUI();
+    }
+
+    function buyBall() {
+      if (coins >= 10) {
+        coins -= 10;
+        balls++;
+        logMessage("Bought 1 Pokéball.");
+      } else {
+        logMessage("Not enough coins!");
+      }
+      updateUI();
+    }
+
+    function buyAuto() {
+      if (coins >= 50) {
+        coins -= 50;
+        autoLevel++;
+        logMessage("Upgraded Auto Submit to Lv " + autoLevel);
+        if (autoLevel === 1) autoSubmit();
+      } else {
+        logMessage("Not enough coins!");
+      }
+      updateUI();
+    }
+
+    function buyLuck() {
+      if (coins >= 50) {
+        coins -= 50;
+        luckLevel++;
+        logMessage("Upgraded Luck to Lv " + luckLevel);
+      } else {
+        logMessage("Not enough coins!");
+      }
+      updateUI();
+    }
+
+    function autoSubmit() {
+      setInterval(() => {
+        for (let i = 0; i < autoLevel; i++) submitAction();
+      }, 5000);
+    }
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
